@@ -1,0 +1,456 @@
+#!/usr/bin/env bash
+UNAMEOUT="$(uname -s)"
+
+# Regular Colors
+BLACK='\033[0;30m'  # Black
+RED='\033[0;31m'    # Red
+GREEN='\033[0;32m'  # Green
+YELLOW='\033[0;33m' # Yellow
+BLUE='\033[0;34m'   # Blue
+PURPLE='\033[0;35m' # Purple
+CYAN='\033[0;36m'   # Cyan
+WHITE='\033[0;37m'  # White
+NC='\033[0m'
+
+# Verify operating system is supported...
+case "${UNAMEOUT}" in
+Linux*) MACHINE=linux ;;
+Darwin*) MACHINE=mac ;;
+*) MACHINE="UNKNOWN" ;;
+esac
+
+if [ "$MACHINE" == "UNKNOWN" ]; then
+  echo -e "${YELLOW}Unsupported operating system [$(uname -s)]. Laravel AIRIS supports macOS, Linux, and Windows (WSL2)." >&2
+  exit 1
+fi
+# Define environment variables...
+export APP_PORT=${APP_PORT:-80}
+export APP_SERVICE=${APP_SERVICE:-"web"}
+export COMPOSER_SERVICE=${APP_SERVICE:-"composer"}
+export DB_PORT=${DB_PORT:-3306}
+export WWWUSER=${WWWUSER:-$(id -u)}
+export WWWGROUP=${WWWGROUP:-$(id -g)}
+
+export AIRIS_SHARE_DASHBOARD=${AIRIS_SHARE_DASHBOARD:-4040}
+export AIRIS_SHARE_SERVER_HOST=${AIRIS_SHARE_SERVER_HOST:-"laravel-AIRIS.site"}
+export AIRIS_SHARE_SERVER_PORT=${AIRIS_SHARE_SERVER_PORT:-8080}
+CURRENT_DIR=$(pwd)
+AIRIS=/usr/bin/airis
+ARTISAN=/usr/bin/artisan
+VENDOR_ROOT=${CURRENT_DIR}/vendor/
+NODE_ROOT=${CURRENT_DIR}/node_modules/
+#if [[ ! -f ${AIRIS} ]]; then
+#  echo -e "${RED} add AIRIS to /usr/bin directory now you can use it with out ./ in your ${CURRENT_DIR} ${NC}"
+#  sudo ln -s "${CURRENT_DIR}/AIRIS" /usr/bin/AIRIS
+#fi
+#if [[ ! -f ${ARTISAN} ]]; then
+#  echo -e "${RED} add artisan to /usr/bin directory now you can use it with out ./ in your ${CURRENT_DIR} ${NC}"
+#  sudo chmod +x artisan
+#  sudo ln -s "${CURRENT_DIR}/artisan" /usr/bin/artisan
+#fi
+#stop local apache mysql and nginx
+NGINXRUNNING=$(systemctl is-active nginx)
+APACHERUNNING=$(systemctl is-active apache2)
+MYSQLRUNNING=$(systemctl is-active mysql)
+if [ $APACHERUNNING = "active" ]; then
+  echo "Apache is running, stopping it"
+  sudo service apache2 stop
+  echo -e "${YELLOW}Stopping Apache2${NC}"
+fi
+if [ $NGINXRUNNING = "active" ]; then
+  echo "nginx is running, stopping it"
+  sudo service nginx stop
+  echo -e "${YELLOW}Stopping Nginx${NC}"
+fi
+if [ $MYSQLRUNNING = "active" ]; then
+  echo "MySql is running, stopping it"
+  sudo service mysql stop
+  echo -e "${YELLOW}Stopping MySql${NC}"
+fi
+# Ensure that Docker is running...
+if ! docker info >/dev/null 2>&1; then
+  echo -e "${WHITE}Docker is not running.${NC}" >&2
+
+  exit 1
+fi
+COMPOSE="docker-compose"
+# Determine if AIRIS is currently up...
+PSRESULT="$(docker-compose ps -q)"
+
+if docker-compose ps | grep $APP_SERVICE | grep 'Exit'; then
+  echo -e "${WHITE}Shutting down old AIRIS processes...${NC}" >&2
+
+  docker-compose down >/dev/null 2>&1
+
+  EXEC="no"
+elif [ -n "$PSRESULT" ]; then
+  EXEC="yes"
+else
+  EXEC="no"
+fi
+
+# Function that outputs AIRIS is not running...
+function airis_is_not_running() {
+  echo -e "${WHITE}AIRIS is not running.${NC}" >&2
+  echo "" >&2
+  echo -e "${WHITE}You may AIRIS using the following commands:${NC} './AIRIS up|AIRIS up' or './AIRIS up -d|AIRIS up -d'" >&2
+
+  exit 1
+}
+
+if [ $# -gt 0 ]; then
+  # Source the ".env" file so Laravel's environment variables are available...
+  if [ -f ./.env ]; then
+    source ./.env
+  fi
+  if [ "$1" == "initialize" ] || [ "$1" == "-init" ]; then
+    shift 1
+    echo ${AIRIS} ${ARTISAN}
+    echo -e "${RED} start delete old airis,artisan files from /usr/bin directory ${NC}\r\n"
+    sudo rm -rf ${AIRIS} && sudo rm -rf ${ARTISAN} || exit
+
+    sudo ln -s "${CURRENT_DIR}/airis" /usr/bin/airis
+    echo -e "${GREEN} AIRIS add to /usr/bin directory successfully ${NC}"
+
+    sudo ln -s "${CURRENT_DIR}/artisan" /usr/bin/artisan
+    echo -e "${GREEN} artisan add to /usr/bin directory successfully ${NC}\r\n"
+    sudo chmod +x artisan
+
+    echo -e "${BLUE} start to set vendor directory permission${NC}"
+    sudo chown -R "${WWWUSER}":www-data "${VENDOR_ROOT}" && sudo chmod -R 777 "${VENDOR_ROOT}" || exit
+    echo -e "${BLUE} permission set for composer directory ${NC}\r\n"
+
+    echo -e "${CYAN} start to set node_modules directory permission${NC}"
+    sudo chown -R "${WWWUSER}":www-data "${NODE_ROOT}" && sudo chmod -R 777 "${NODE_ROOT}" || exit
+    echo -e "${GREEN} permission set for node_modules directory ${NC}\r\n"
+
+  elif [ "$1" == "help" ] || [ "$1" == "-h" ]; then
+    shift 1
+    echo -e "${GREEN} You have these commands for running:\r\n"
+    echo -e "${RED} up:"
+    echo -e "${CYAN} AIRIS up use for running docker-compose up command\r\n"
+    echo -e "${PURPLE} sample : AIRIS up \r\n"
+
+    echo -e "${RED} down:"
+    echo -e "${CYAN} AIRIS down use for running docker-compose down command\r\n"
+    echo -e "${PURPLE} sample : AIRIS down \r\n"
+
+    echo -e "${RED} php:"
+    echo -e "${CYAN}AIRIS php use for proxy php commands to your web container service \r\n"
+    echo -e "${PURPLE}sample : AIRIS php -v \r\n"
+
+    echo -e "${RED} bin:"
+    echo -e "${CYAN}AIRIS bin use for proxy vendor binary commands on the web container \r\n"
+    echo -e "${PURPLE}sample : AIRIS bin carbon \r\n"
+
+    echo -e "${RED}composer"
+    echo -e "${CYAN}AIRIS composer use for proxy composer commands to your web container service \r\n"
+    echo -e "${PURPLE}sample : AIRIS composer -v \r\n"
+
+    echo -e "${RED}artisan:"
+    echo -e "${CYAN}AIRIS artisan use for proxy artisan commands to your web container service \r\n"
+    echo -e "${PURPLE}sample : AIRIS artisan cache:clear  \r\n"
+
+    echo -e "${RED}test"
+    echo -e "${CYAN}AIRIS test use for proxy artisan test to your web container service  \r\n"
+    echo -e "${PURPLE}AIRIS test --testsuite=Feature --stop-on-failure\r\n"
+
+    echo -e "${RED}dusk:"
+    echo -e "${CYAN}AIRIS dusk use for proxy artisan dusk commands to your web container service \r\n"
+    echo -e "${PURPLE}sample : AIRIS artisan dusk dusk:chrome-driver \r\n"
+
+    echo -e "${RED}dusk:fails :"
+    echo -e "${CYAN}AIRIS dusk:fails use for proxy artisan dusk:fails commands to your web container service \r\n"
+    echo -e "${PURPLE}sample : AIRIS artisan dusk:fails \r\n"
+
+    echo -e "${RED}tinker:"
+    echo -e "${CYAN}AIRIS tinker use for proxy artisan tinker commands to your web container service \r\n"
+    echo -e "${PURPLE}sample : AIRIS artisan tinker \r\n"
+
+    echo -e "${RED} app-console|a-console:"
+    echo -e "${CYAN} AIRIS app-console|a-console use for proxy php Interactive mode enabled to your web container service  \r\n"
+    echo -e "${PURPLE} sample : AIRIS app-console \r\n"
+
+    echo -e "${RED}node:"
+    echo -e "${CYAN}AIRIS node use for proxy node command to your node container service  \r\n"
+    echo -e "${PURPLE}AIRIS node install \r\n"
+
+    echo -e "${RED}npm:"
+    echo -e "${CYAN}AIRIS npm use for proxy npm command to your node container service  \r\n"
+    echo -e "${PURPLE}AIRIS npm install \r\n"
+
+    echo -e "${RED}npx:"
+    echo -e "${CYAN}AIRIS npx use for Proxy NPX commands to the 'npx' binary on the web container  \r\n"
+    echo -e "${PURPLE}AIRIS npx \r\n"
+
+    echo -e "${RED}yarn:"
+    echo -e "${CYAN}AIRIS yarn use for proxy node yarn command to your node container service  \r\n"
+    echo -e "${PURPLE}AIRIS yarn test \r\n"
+
+    echo -e "${RED}mysql:"
+    echo -e "${CYAN}AIRIS mysql use for initiate a mysql CLI terminal session within the 'mysql' container  \r\n"
+    echo -e "${PURPLE}AIRIS mysql \r\n"
+
+    echo -e "${RED}mariadb:"
+    echo -e "${CYAN}AIRIS mariadb use for initiate a MYSQL CLI terminal session within the 'mariadb' container  \r\n"
+    echo -e "${PURPLE}AIRIS mariadb \r\n"
+
+    echo -e "${RED}psql:"
+    echo -e "${CYAN}AIRIS psql use for initiate a PostgreSQL CLI terminal session within the "pgsql" container  \r\n"
+    echo -e "${PURPLE}AIRIS psql \r\n"
+
+    echo -e "${RED}shell:"
+    echo -e "${CYAN}AIRIS shell use for initiate a bash shell within the web container  \r\n"
+    echo -e "${PURPLE}sample : AIRIS shell \r\n"
+
+    echo -e "${RED}root-shell:"
+    echo -e "${CYAN}AIRIS shell use for initiate a root user bash shell within the web container  \r\n"
+    echo -e "${PURPLE}sample : AIRIS shell \r\n"
+
+    echo -e "${RED}redis:"
+    echo -e "${CYAN}AIRIS redis use for Initiate a Redis CLI terminal session within the 'redis' container  \r\n"
+    echo -e "${PURPLE}sample : AIRIS redis \r\n"
+
+    echo -e "${RED}share:"
+    echo -e "${CYAN}AIRIS share use for Share the site  \r\n"
+    echo -e "${PURPLE}sample : AIRIS share \r\n"
+
+    echo -e "${RED} :"
+    echo -e "${CYAN} Pass unknown commands to the 'docker-compose' binary  \r\n"
+    echo -e "${PURPLE}sample : AIRIS  events \r\n"
+  # Proxy PHP commands to the "php" binary on the application container...
+  elif [ "$1" == "php" ]; then
+    shift 1
+
+    if [ "$EXEC" == "yes" ]; then
+      # shellcheck disable=SC2124
+      EXEC_CMD="cd /var/www/html && php $@"
+      $COMPOSE exec -u airis "$APP_SERVICE" bash -c "$EXEC_CMD"
+    else
+      airis_is_not_running
+    fi
+
+  # Proxy vendor binary commands on the application container...
+  elif [ "$1" == "bin" ]; then
+    shift 1
+
+    if [ "$EXEC" == "yes" ]; then
+      # shellcheck disable=SC2124
+      EXEC_CMD="$@"
+      $COMPOSE exec -u airis "$APP_SERVICE" bash -c "$EXEC_CMD"
+    else
+      airis_is_not_running
+    fi
+
+  # Proxy Composer commands to the "composer" binary on the application container...
+  elif [ "$1" == "composer" ]; then
+    shift 1
+    if [ "$EXEC" == "yes" ]; then
+      # shellcheck disable=SC2124
+      EXEC_CMD="composer $@"
+      $COMPOSE exec -u airis "$APP_SERVICE" bash -c "$EXEC_CMD"
+    else
+      airis_is_not_running
+    fi
+
+  # Proxy Artisan commands to the "artisan" binary on the application container...
+  elif [ "$1" == "artisan" ] || [ "$1" == "art" ]; then
+    shift 1
+    if [ "$EXEC" == "yes" ]; then
+      # shellcheck disable=SC2124
+      EXEC_CMD="php artisan $@"
+      $COMPOSE exec -u airis "$APP_SERVICE" bash -c "$EXEC_CMD"
+    else
+      airis_is_not_running
+    fi
+
+  # Proxy the "test" command to the "php artisan test" Artisan command...
+  elif [ "$1" == "test" ]; then
+    shift 1
+    if [ "$EXEC" == "yes" ]; then
+      # shellcheck disable=SC2124
+      EXEC_CMD="php artisan test "$@""
+      $COMPOSE exec "$APP_SERVICE" bash -c "$EXEC_CMD"
+    else
+      airis_is_not_running
+    fi
+
+  # Proxy the "dusk" command to the "php artisan dusk" Artisan command...
+  elif [ "$1" == "dusk" ]; then
+    shift 1
+    if [ "$EXEC" == "yes" ]; then
+      # shellcheck disable=SC2124
+      EXEC_CMD="php artisan dusk $@"
+      $COMPOSE exec \
+        -u airis \
+        -e "APP_URL=http://web" \
+        -e "DUSK_DRIVER_URL=http://selenium:4444/wd/hub" \
+        "$APP_SERVICE" bash -c "$EXEC_CMD"
+    else
+      airis_is_not_running
+    fi
+
+  # Proxy the "dusk:fails" command to the "php artisan dusk:fails" Artisan command...
+  elif [ "$1" == "dusk:fails" ]; then
+    shift 1
+    if [ "$EXEC" == "yes" ]; then
+      # shellcheck disable=SC2124
+      EXEC_CMD="php artisan dusk:fails $@"
+      $COMPOSE exec \
+        -u airis \
+        -e "APP_URL=http://web" \
+        -e "DUSK_DRIVER_URL=http://selenium:4444/wd/hub" \
+        "$APP_SERVICE" \
+        bash -c "$EXEC_CMD"
+    else
+      airis_is_not_running
+    fi
+
+  # Initiate a Laravel Tinker session within the application container...
+  elif [ "$1" == "tinker" ]; then
+    shift 1
+    if [ "$EXEC" == "yes" ]; then
+      # shellcheck disable=SC2124
+      EXEC_CMD="php artisan tinker $@"
+      $COMPOSE exec -u airis "$APP_SERVICE" bash -c "$EXEC_CMD"
+    else
+      airis_is_not_running
+    fi
+
+  elif [ "$1" == "app-console" ] || [ "$1" == "a-console" ]; then
+    shift 1
+    if [ "$EXEC" == "yes" ]; then
+      EXEC_CMD="php -a $@"
+      $COMPOSE exec -u airis web bash -c "$EXEC_CMD"
+    else
+      airis_is_not_running
+    fi
+  # Proxy Node commands to the "node" binary on the application container...
+  elif [ "$1" == "node" ]; then
+    shift 1
+    if [ "$EXEC" == "yes" ]; then
+      # shellcheck disable=SC2124
+      EXEC_CMD="node $@"
+      $COMPOSE exec -u airis "$APP_SERVICE" bash -c "$EXEC_CMD"
+    else
+      airis_is_not_running
+    fi
+
+  # Proxy NPM commands to the "npm" binary on the application container...
+  elif [ "$1" == "npm" ]; then
+    shift 1
+    if [ "$EXEC" == "yes" ]; then
+      EXEC_CMD="npm $@"
+      $COMPOSE exec -u airis "$APP_SERVICE" bash -c "$EXEC_CMD"
+    else
+      airis_is_not_running
+    fi
+
+  # Proxy NPX commands to the "npx" binary on the application container...
+  elif [ "$1" == "npx" ]; then
+    shift 1
+    if [ "$EXEC" == "yes" ]; then
+      EXEC_CMD="npx "$@""
+      $COMPOSE exec -u airis "$APP_SERVICE" bach -c "$EXEC_CMD"
+    else
+      airis_is_not_running
+    fi
+
+  # Proxy YARN commands to the "yarn" binary on the application container...
+  elif [ "$1" == "yarn" ]; then
+    shift 1
+    if [ "$EXEC" == "yes" ]; then
+      # shellcheck disable=SC2124
+      EXEC_CMD="yarn $@"
+      $COMPOSE exec -u airis "$APP_SERVICE" bach -c "$EXEC_CMD"
+    else
+      airis_is_not_running
+    fi
+
+  # Initiate a MySQL CLI terminal session within the "mysql" container...
+  elif [ "$1" == "mysql" ]; then
+    shift 1
+    if [ "$EXEC" == "yes" ]; then
+      docker-compose exec \
+        mysql \
+        bash -c 'MYSQL_PWD=${MYSQL_PASSWORD} mysql -u ${MYSQL_USER} ${MYSQL_DATABASE}'
+    else
+      airis_is_not_running
+    fi
+
+  # Initiate a MySQL CLI terminal session within the "mariadb" container...
+  elif [ "$1" == "mariadb" ]; then
+    shift 1
+    if [ "$EXEC" == "yes" ]; then
+      docker-compose exec \
+        mariadb \
+        bash -c 'MYSQL_PWD=${MYSQL_PASSWORD} mysql -u ${MYSQL_USER} ${MYSQL_DATABASE}'
+    else
+      airis_is_not_running
+    fi
+
+  # Initiate a PostgreSQL CLI terminal session within the "pgsql" container...
+  elif [ "$1" == "psql" ]; then
+    shift 1
+    if [ "$EXEC" == "yes" ]; then
+      docker-compose exec \
+        pgsql \
+        bash -c 'PGPASSWORD=${PGPASSWORD} psql -U ${POSTGRES_USER} ${POSTGRES_DB}'
+    else
+      airis_is_not_running
+    fi
+
+  # Initiate a Bash shell within the application container...
+  elif [ "$1" == "shell" ] || [ "$1" == "bash" ]; then
+    shift 1
+    if [ "$EXEC" == "yes" ]; then
+      docker-compose exec \
+        -u airis \
+        "$APP_SERVICE" \
+        bash
+    else
+      airis_is_not_running
+    fi
+
+  # Initiate a root user Bash shell within the application container...
+  elif [ "$1" == "root-shell" ]; then
+    shift 1
+    if [ "$EXEC" == "yes" ]; then
+      docker-compose exec \
+        "$APP_SERVICE" \
+        bash
+    else
+      airis_is_not_running
+    fi
+
+  # Initiate a Redis CLI terminal session within the "redis" container...
+  elif [ "$1" == "redis" ]; then
+    shift 1
+    if [ "$EXEC" == "yes" ]; then
+      docker-compose exec \
+        redis \
+        redis-cli
+    else
+      airis_is_not_running
+    fi
+
+  # Share the site...
+  elif [ "$1" == "share" ]; then
+    shift 1
+    if [ "$EXEC" == "yes" ]; then
+      docker run --init --rm -p "$AIRIS_SHARE_DASHBOARD":4040 -t beyondcodegmbh/expose-server:latest share http://host.docker.internal:"$APP_PORT" \
+        --server-host="$AIRIS_SHARE_SERVER_HOST" \
+        --server-port="$AIRIS_SHARE_SERVER_PORT" \
+        --auth="$AIRIS_SHARE_TOKEN" \
+        --subdomain=""
+      "$@"
+    else
+      airis_is_not_running
+    fi
+  # Pass unknown commands to the "docker-compose" binary...
+  else
+    docker-compose "$@"
+  fi
+else
+  docker-compose ps
+fi
