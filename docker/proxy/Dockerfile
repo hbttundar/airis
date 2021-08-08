@@ -14,8 +14,8 @@ RUN bash /tmp/build.sh
 #
 # copy all files that we need
 #
-COPY apache /etc/apache2/
-COPY nginx /etc/nginx 
+COPY apache/config/ /etc/apache2/
+COPY nginx/config/ /etc/nginx/
 COPY self-certificate/server.crt /etc/ssl/certs/server.crt 
 COPY self-certificate/server.key /etc/ssl/private/server.key 
 
