@@ -32,8 +32,8 @@ RUN bash /tmp/build.sh
 #
 # copy  web server configs
 #
-COPY ${PHP_VERSION}/apache/  /etc/apache2/
-COPY ${PHP_VERSION}/nginx/  /etc/nginx
+COPY ${PHP_VERSION}/apache/config/  /etc/apache2/
+COPY ${PHP_VERSION}/nginx/config/  /etc/nginx/
 
 RUN update-ca-certificates
 RUN setcap "cap_net_bind_service=+ep" /usr/bin/php${PHP_VERSION}

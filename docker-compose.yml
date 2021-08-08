@@ -1,4 +1,4 @@
-# For more information: https://laravel.com/docs/indra
+# For more information: https://laravel.com/docs/airis
 version: "3"
 services:
   ## web service ############################################################################################################################
@@ -11,51 +11,26 @@ services:
         PHP_VERSION: "${PHP_VERSION}"
         INSTALL_XDEBUG: "${INSTALL_XDEBUG}"
         DEFAULT_WEB_SERVER: "${DEFAULT_WEB_SERVER}"
-    environment:
-      LARAVEL_INDRA: 1
+        APP_ENV: "${APP_ENV}"
     networks:
-      - indra
+      - airis
     volumes:
-      - "./:/var/www/html/"
-      - "./storage/:/var/www/html/storage/:rw"
-      - "${PHP_LOCAL_CONFIG}:/etc/php/${PHP_VERSION}/apache2/conf.d/override_php.ini"
+      - "./:/var/www/html"
+      - "./storage/:/var/www/html/storage:rw"
+      - "${PHP_LOCAL_CONFIG}:/etc/php/${PHP_VERSION}/${PHP_CONFIG_FOLDER}/conf.d/override_php.ini"
       - "${MSMTP_LOCAL_CONFIG}:/etc/msmtprc"
     depends_on:
-      - mysql
+      - db
       - redis
-      - meilisearch
       - selenium
+      - proxy
     links:
-      - proxy:www.stage.indra.de
-      - proxy:www.live.indra.de
-      - proxy:www.indra.de
+      - proxy:www.airis.de.localhost
+      - proxy:www.airis.localhost
     container_name: ${WEB_CONTAINER_NAME}
-  ### playground #######################################################################################################
-  playground:
-    build:
-      context: ./docker/playground
-      args:
-        PHP_VERSION: "${PHP_VERSION}"
-        APP_ENV: "${APP_ENV}"
-    restart: always
-    volumes:
-      - ../playground:/var/www/html/
-      - ./docker/local_config/msmtp:/etc/msmtp_local_conf
-      - ./docker/local_config/php:/usr/local/etc/php/dev.d
-    environment:
-      HP_INI_SCAN_DIR: "/usr/local/etc/php/dev.d:/usr/local/etc/php/conf.d"
-      zend_extension: "/usr/local/lib/php/extensions/no-debug-non-zts-20190902/xdebug.so"
-    depends_on:
-      - mysql
-    links:
-      - proxy:www.playground.localhost
-      - proxy:playground.localhost
-    networks:
-      - indra
-    container_name: ${PLAYGROUND_CONTAINER_NAME}
   ### proxy ############################################################################################################
   proxy:
-    build: 
+    build:
       context: ./docker/proxy
       args:
         DEFAULT_WEB_SERVER: "${DEFAULT_WEB_SERVER}"
@@ -63,7 +38,7 @@ services:
       - '80:80'
       - '443:443'
     networks:
-      - indra
+      - airis
     container_name: ${PROXY_CONTAINER_NAME}
   ### hostmachine ######################################################################################################
   hostmachine:
@@ -75,7 +50,7 @@ services:
           memory: 8M
     restart: on-failure
     networks:
-      - indra
+      - airis
     container_name: ${HOSTMACHINE_CONTAINER_NAME}
   ### composer #########################################################################################################
   composer:
@@ -85,65 +60,56 @@ services:
     volumes:
       - "./:/var/www/html/"
     command: [ "install", "--ignore-platform-reqs" ]
-    user: ${WWWUSER}
+    user: "${WWWUSER}"
     networks:
-      - indra
+      - airis
     container_name: ${COMPOSER_CONTAINER_NAME}
   ## mysql service ##########################################################################################################################
-  mysql:
-    image: "mysql:8.0"
+  db:
+    image: "${DB_IMAGE}:${DB_VERSION}"
+    restart: 'always'
     ports:
-      - "${FORWARD_DB_PORT:-3306}:3306"
+       - "${FORWARD_DB_PORT:-3306}:3306"
     environment:
-      MYSQL_ROOT_PASSWORD: "${DB_PASSWORD}"
-      MYSQL_DATABASE: "${DB_DATABASE}"
-      MYSQL_USER: "${DB_USERNAME}"
-      MYSQL_PASSWORD: "${DB_PASSWORD}"
-      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+       MYSQL_ROOT_PASSWORD: "${DB_PASSWORD}"
+       MYSQL_DATABASE: "${DB_DATABASE}"
+       MYSQL_USER: "${DB_USERNAME}"
+       MYSQL_PASSWORD: "${DB_PASSWORD}"
+       MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
     volumes:
-      - "indramysql:/var/lib/mysql"
+       - "airis_db:/var/lib/mysql"
     healthcheck:
-      test: [ "CMD", "mysqladmin", "ping", "-p${DB_PASSWORD}" ]
-      retries: 3
-      timeout: 5s
+       test: [ "CMD", "mysqladmin", "ping", "-p${DB_PASSWORD}" ]
+       retries: 3
+       timeout: 5s
     networks:
-      - indra
-    container_name: ${MYSQL_CONTAINER_NAME}
+       - airis
+    container_name: ${DB_CONTAINER_NAME}
   ## redis service ##########################################################################################################################
   redis:
     image: "redis:alpine"
     ports:
       - "${FORWARD_REDIS_PORT:-6379}:6379"
     volumes:
-      - "indraredis:/data"
+      - "airis_redis:/data"
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
       retries: 3
       timeout: 5s
     networks:
-      - indra
+      - airis
     container_name: ${REDIS_CONTAINER_NAME}
   ## meilisearch service ####################################################################################################################
   meilisearch:
-    image: "getmeili/meilisearch:latest"
-    ports:
-      - "${FORWARD_MEILISEARCH_PORT:-7700}:7700"
+    build:
+      context: ./docker/meilisearch
+      args:
+        FORWARD_MEILISEARCH_PORT: "${FORWARD_MEILISEARCH_PORT}"
     volumes:
-      - "indrameilisearch:/data.ms"
-    healthcheck:
-      test:
-        [
-            "CMD",
-            "wget",
-            "--no-verbose",
-            "--spider",
-            "http://localhost:7700/health",
-        ]
-      retries: 3
-      timeout: 5s
+      - "airis_meilisearch:/data.ms"
     networks:
-      - indra
-    container_name: ${SEARCH_ENGINE_CONTAINER_NAME}
+      - airis
+    container_name: ${MEILISERACH_CONTAINER_NAME}
   ## mailhog service ########################################################################################################################
   mailhog:
     image: "mailhog/mailhog:latest"
@@ -151,7 +117,7 @@ services:
       - "${FORWARD_MAILHOG_PORT:-1025}:1025"
       - "${FORWARD_MAILHOG_DASHBOARD_PORT:-8025}:8025"
     networks:
-      - indra
+      - airis
     container_name: ${MAIL_SERVICE_CONTAINER_NAME}
   ## selenium service ########################################################################################################################
   selenium:
@@ -159,19 +125,17 @@ services:
     volumes:
       - "/dev/shm:/dev/shm"
     networks:
-      - indra
+      - airis
     container_name: ${SELENIUM_CONTAINER_NAME}
   ### mongo ############################################################################################################
   mongo:
     image: mongo:4.2
     networks:
-      - indra
+      - airis
     container_name: ${MONOGO_CONTAINER_NAME}
   ###ElasticSearch #####################################################################################################
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.2
-    volumes:
-      - elasticsearch:/usr/share/elasticsearch/data
     environment:
       - http.host=0.0.0.0
       - transport.host=localhost
@@ -186,29 +150,28 @@ services:
         limits:
           memory: 1g
     networks:
-      - indra
+      - airis
     container_name: ${ELASTICSEARCH_CONTAINER_NAME}
   ### graylog ############################################################################################################
   graylog:
-    image: graylog/graylog:4.0
+    image: graylog/graylog:4.1
     volumes:
-      - indragraylog:/usr/share/graylog/data/journal
-      - ./docker/graylog/config/:/usr/share/graylog/data/config/
+      - "airis_graylog:/usr/share/graylog/data/journal"
+      - "./docker/graylog/config/:/usr/share/graylog/data/config"
     environment:
       # CHANGE ME (must be at least 16 characters)!
-      - GRAYLOG_PASSWORD_SECRET=ebueroGraylogAdmin
+      - GRAYLOG_PASSWORD_SECRET=somepasswordpepper
       # Password: admin
       - GRAYLOG_ROOT_PASSWORD_SHA2=8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918
       - GRAYLOG_HTTP_EXTERNAL_URI=http://127.0.0.1:7000/
+      - GRAYLOG_ELASTICSEARCH_VERSION=7
     links:
-      - mongo:mongo
-      - elasticsearch
       - proxy:www.graylog.localhost
     depends_on:
       - mongo
       - elasticsearch
     networks:
-      - indra
+      - airis
     ports:
       # Graylog web interface and REST API
       - 7000:9000
@@ -225,19 +188,44 @@ services:
     entrypoint: /usr/bin/tini -- wait-for-it elasticsearch:9200 --  /docker-entrypoint.sh
     restart: always
     container_name: ${GRAYLOG_CONTAINER_NAME}
+  ### portainer ########################################################################################################
+  portainer:
+    image: portainer/portainer
+    volumes:
+      - "airis_portainer:/data"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    links:
+      - proxy:www.portainer.localhost
+    networks:
+      - airis
+    deploy:
+      placement:
+        constraints: [ node.role == manager ]
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: "1"
+    ports:
+      - "9999:9000"
+    container_name: ${PORTAINER_CONTAINER_NAME}
+################################################################################################################################    
 networks:
-  indra:
+  airis:
     driver: bridge
 volumes:
-  indramysql:
+  airis_db:
     driver: local
-  indraredis:
+  airis_redis:
     driver: local
-  indrameilisearch:
+  airis_meilisearch:
     driver: local
   mongo:
     driver: local
   elasticsearch:
     driver: local
-  indragraylog:
+  airis_graylog:
     driver: local
+  airis_portainer:
+      driver: local  
