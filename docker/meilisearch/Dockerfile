@@ -2,17 +2,14 @@ FROM ubuntu:21.04
 
 ARG FORWARD_MEILISEARCH_PORT
 
-WORKDIR /meilisearch
+COPY ./scripts/  /tmp/
+COPY ./supervisord.conf /tmp/config/supervisord_meilisearch.conf
+RUN chmod +x /tmp/build.sh && chmod +x /tmp/start.sh
 
-RUN apt-get update
-RUN apt-get install -y\
-	libc6-dev\
-	wget
-
-RUN wget --quiet -O meilisearch https://github.com/meilisearch/MeiliSearch/releases/download/v0.20.0/meilisearch-linux-armv8 \
-	&& chmod +x meilisearch
+RUN bash /tmp/build.sh
 
 ENV MEILI_HTTP_ADDR=0.0.0.0:${FORWARD_MEILISEARCH_PORT}
 EXPOSE ${FORWARD_MEILISEARCH_PORT}/tcp
 
-CMD ["/bin/sh", "-c", "./meilisearch"]
+
+ENTRYPOINT ["start.sh"]

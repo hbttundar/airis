@@ -16,12 +16,12 @@ RUN bash /tmp/build.sh
 #
 COPY apache/config/ /etc/apache2/
 COPY nginx/config/ /etc/nginx/
-COPY self-certificate/server.crt /etc/ssl/certs/server.crt 
-COPY self-certificate/server.key /etc/ssl/private/server.key 
+COPY self-certificate/server.crt /etc/ssl/certs/server.crt
+COPY self-certificate/server.key /etc/ssl/private/server.key
 
 RUN update-ca-certificates
 
 
 EXPOSE 80 443
-
+#CMD tail -f /dev/null
 ENTRYPOINT ["start.sh"]

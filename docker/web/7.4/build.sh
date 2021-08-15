@@ -88,16 +88,29 @@ apt-get update &&
     cp /tmp/msmtprc /etc/msmtprc
   fi
 echo '-----------------------------------------------------------------------------------'
-echo '----------------------- config apache modules -------------------------------------'
+echo '--------------------------- config web server -------------------------------------'
 echo '-----------------------------------------------------------------------------------'
-a2enmod rewrite
-a2enmod headers
-a2enmod expires
-a2enmod ssl
-a2enmod proxy
-a2enmod proxy_http
-a2enmod proxy_fcgi setenvif
-a2enmod php7.4
+if [ "$DEFAULT_WEB_SERVER" = "apache2" ]; then
+  echo -e "${YELLOW}install apache2 server and config it"
+  apt-get install -yq apache2
+  a2enmod rewrite
+  a2enmod headers
+  a2enmod expires
+  a2enmod ssl
+  a2enmod proxy
+  a2enmod proxy_http
+  a2enmod proxy_fcgi setenvif
+  a2enmod php${PHP_VERSION}
+  cp /tmp/config/supervisord_apache2.conf /etc/supervisor/conf.d/supervisord.conf
+  echo -e "${YELLOW}apache2 install sucessfully"
+fi
+if [ "$DEFAULT_WEB_SERVER" = "nginx" ]; then
+  echo -e "${YELLOW}install nginx server and config it"
+  apt-get install  -yq net-tools nginx
+  cp /tmp/config/supervisord_nginx.conf /etc/supervisor/conf.d/supervisord.conf
+  echo -e "${YELLOW}nginx install sucessfully"
+fi
+
 echo '-----------------------------------------------------------------------------------'
 echo '-------------------------- clean ubuntu container ---------------------------------'
 echo '-----------------------------------------------------------------------------------'

@@ -2,7 +2,6 @@
 export DEBIAN_FRONTEND=noninteractive
 #set the timezone for tzdata in ubuntu otherwise during installation ask for select timezone
 export TZ=UTC
-
 ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ >/etc/timezone
 apt-get update &&
   apt-get install -y \
@@ -28,7 +27,10 @@ apt-get update &&
     libmcrypt-dev \
     apt-utils \
     ssl-cert \
-    openssl
+    openssl &&
+  mkdir -p ~/.gnupg &&
+  chmod 600 ~/.gnupg &&
+  echo "disable-ipv6" >>~/.gnupg/dirmngr.conf
 echo '-----------------------------------------------------------------------------------'
 echo '--------------------------- config web server -------------------------------------'
 echo '-----------------------------------------------------------------------------------'
@@ -41,6 +43,12 @@ if [ "$DEFAULT_WEB_SERVER" = "apache2" ]; then
   a2enmod ssl && \
   a2enmod proxy && \
   a2enmod proxy_http && \
+  a2enmod proxy_connect && \
+  a2enmod proxy_fcgi setenvif &&\
+  a2enmod http2 && \
+  a2enmod remoteip && \
+  a2enmod php${PHP_VERSION} && \
+  a2enconf ssl-params
   cp /tmp/config/supervisord_apache2.conf /etc/supervisor/conf.d/supervisord.conf
   echo -e "${YELLOW}apache2 install sucessfully"
   source /etc/apache2/envvars
@@ -53,5 +61,4 @@ if [ "$DEFAULT_WEB_SERVER" = "nginx" ]; then
   cp /tmp/config/supervisord_nginx.conf /etc/supervisor/conf.d/supervisord.conf
   echo -e "${YELLOW}nginx install sucessfully"
 fi
-
 apt-get -y autoremove && apt-get clean && rm -rf /var/lib/apt/lists/*

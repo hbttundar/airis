@@ -1,5 +1,9 @@
-#!/usr/bin/env bash
-
+#!/bin/bash
+set -e
+# shellcheck disable=SC1073
+if [ "$APP_ENV" = "local" ]; then
+  php artisan migrate --seed --force
+fi
 if [ ! -z "$WWWUSER" ]; then
   usermod -u $WWWUSER sail
 fi

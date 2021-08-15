@@ -92,15 +92,19 @@ echo '--------------------------- config web server ----------------------------
 echo '-----------------------------------------------------------------------------------'
 if [ "$DEFAULT_WEB_SERVER" = "apache2" ]; then
   echo -e "${YELLOW}install apache2 server and config it"
-  apt-get install -yq apache2 
-  a2enmod rewrite
-  a2enmod headers
-  a2enmod expires
-  a2enmod ssl
-  a2enmod proxy
-  a2enmod proxy_http
-  a2enmod proxy_fcgi setenvif
-  a2enmod php${PHP_VERSION}
+  apt-get install -yq apache2 && \
+  a2enmod rewrite && \
+  a2enmod headers && \
+  a2enmod expires && \
+  a2enmod ssl && \
+  a2enmod proxy && \
+  a2enmod proxy_http && \
+  a2enmod proxy_connect && \
+  a2enmod proxy_fcgi setenvif && \
+  a2enmod http2 && \
+  a2enmod remoteip && \
+  a2enmod php${PHP_VERSION} && \
+  a2enconf ssl-params
   cp /tmp/config/supervisord_apache2.conf /etc/supervisor/conf.d/supervisord.conf
   echo -e "${YELLOW}apache2 install sucessfully"
 fi
@@ -109,8 +113,7 @@ if [ "$DEFAULT_WEB_SERVER" = "nginx" ]; then
   apt-get install  -yq net-tools nginx
   cp /tmp/config/supervisord_nginx.conf /etc/supervisor/conf.d/supervisord.conf
   echo -e "${YELLOW}nginx install sucessfully"
-fi 
-echo
+fi
 echo '-----------------------------------------------------------------------------------'
 echo '-------------------------- clean ubuntu container ---------------------------------'
 echo '-----------------------------------------------------------------------------------'

@@ -1,5 +1,5 @@
 # For more information: https://laravel.com/docs/airis
-version: "3"
+version: "3.8"
 services:
   ## web service ############################################################################################################################
   web:
@@ -57,10 +57,10 @@ services:
     build:
       context: ./docker/composer/
     working_dir: /var/www/html/
+    user: "${WWWUSER}"
     volumes:
       - "./:/var/www/html/"
     command: [ "install", "--ignore-platform-reqs" ]
-    user: "${WWWUSER}"
     networks:
       - airis
     container_name: ${COMPOSER_CONTAINER_NAME}
@@ -99,7 +99,7 @@ services:
     networks:
       - airis
     container_name: ${REDIS_CONTAINER_NAME}
-  ## meilisearch service ####################################################################################################################
+  ## meilisearch service ###############################################################################################
   meilisearch:
     build:
       context: ./docker/meilisearch
@@ -108,7 +108,7 @@ services:
     volumes:
       - "airis_meilisearch:/data.ms"
     networks:
-      - airis
+       - airis
     container_name: ${MEILISERACH_CONTAINER_NAME}
   ## mailhog service ########################################################################################################################
   mailhog:
@@ -170,6 +170,7 @@ services:
     depends_on:
       - mongo
       - elasticsearch
+      - proxy 
     networks:
       - airis
     ports:
