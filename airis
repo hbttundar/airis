@@ -238,7 +238,7 @@ if [ $# -gt 0 ]; then
         brew services stop nginx
         echo "${YELLOW}Stopping Nginx${NC}"
       fi
-      if [ $MYSQLRUNNING != 0 ] ; then
+      if [ $MYSQLRUNNING != 1 ] ; then
         echo -e "${BLACK}MySql is running, stopping it${NC}"
         brew services stop mysql
         echo -e "${YELLOW}Stopping MySql${NC}"
