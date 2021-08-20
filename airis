@@ -11,7 +11,67 @@ PURPLE='\033[0;35m' # Purple
 CYAN='\033[0;36m'   # Cyan
 WHITE='\033[0;37m'  # White
 NC='\033[0m'
+#define forground color plate
+declare -a CUSTOM_F_COLOR=()
+declare -a CUSTOM_B_COLOR=()
+function SET_COLORS() {
+  iter=16
+  while [ $iter -lt 52 ]; do
+    second=$(($iter + 36))
+    third=$(($second + 36))
+    four=$(($third + 36))
+    five=$(($four + 36))
+    six=$(($five + 36))
+    seven=$(($six + 36))
+    if [ $seven -gt 250 ]; then seven=$(($seven - 251)); fi
+    CUSTOM_F_COLOR[$iter]="\033[38;5;${iter}m"
+    CUSTOM_B_COLOR[$iter]="\033[48;5;${iter}m"
+    CUSTOM_F_COLOR[$second]="\033[38;5;${second}m"
+    CUSTOM_B_COLOR[$second]="\033[48;5;${second}m"
+    CUSTOM_F_COLOR[$third]="\033[38;5;${third}m"
+    CUSTOM_B_COLOR[$third]="\033[48;5;${third}m"
+    CUSTOM_F_COLOR[$four]="\033[38;5;${four}m"
+    CUSTOM_B_COLOR[$four]="\033[48;5;${four}m"
+    CUSTOM_F_COLOR[$five]="\033[38;5;${five}m"
+    CUSTOM_B_COLOR[$five]="\033[48;5;${five}m"
+    CUSTOM_F_COLOR[$six]="\033[38;5;${six}m"
+    CUSTOM_B_COLOR[$six]="\033[48;5;${six}m"
+    CUSTOM_F_COLOR[$seven]="\033[38;5;${seven}m"
+    CUSTOM_B_COLOR[$seven]="\033[48;5;${seven}m"
+    iter=$(($iter + 1))
+  done
+}
+SET_COLORS
 
+function PRINT_COLORS() {
+  iter=16
+
+  while [ $iter -lt 52 ]; do
+    second=$(($iter + 36))
+    third=$(($second + 36))
+    four=$(($third + 36))
+    five=$(($four + 36))
+    six=$(($five + 36))
+    seven=$(($six + 36))
+    if [ $seven -gt 250 ]; then seven=$(($seven - 251)); fi
+    echo -en "\033[38;5;$(echo $iter)m█ "
+    printf "%d" $iter
+    echo -en "   \033[38;5;$(echo $second)m█ "
+    printf "%d" $second
+    echo -en "   \033[38;5;$(echo $third)m█ "
+    printf "%d" $third
+    echo -en "   \033[38;5;$(echo $four)m█ "
+    printf "%d" $four
+    echo -en "   \033[38;5;$(echo $five)m█ "
+    printf "%d" $five
+    echo -en "   \033[38;5;$(echo $six)m█ "
+    printf "%d" $six
+    echo -en "   \033[38;5;$(echo $seven)m█ "
+    printf "%d" $seven
+    iter=$(($iter + 1))
+    printf '\r\n'
+  done
+}
 # Verify operating system is supported...
 case "${UNAMEOUT}" in
 Linux*) MACHINE=linux ;;
@@ -101,156 +161,168 @@ if [ $# -gt 0 ]; then
 
   elif [ "$1" == "help" ] || [ "$1" == "-h" ]; then
     shift 1
-
-    echo -e "${GREEN} You can use this command to stop other project docker and make airis ready to go:\r\n"
-    echo -e "${RED} docker-restart | -dr:"
-    echo -e "${CYAN} other project that run with docker and bind required port for airis should stop\r\n"
-    echo -e "${PURPLE} sample : airis docker-restart | airis -dr \r\n"
-
-    echo -e "${GREEN} You have these commands for running:\r\n"
-    echo -e "${RED} up:"
-    echo -e "${CYAN} airis up use for running docker-compose up command\r\n"
-    echo -e "${PURPLE} sample : airis up \r\n"
-
-    echo -e "${RED} down:"
-    echo -e "${CYAN} airis down use for running docker-compose down command\r\n"
-    echo -e "${PURPLE} sample : airis down \r\n"
-
-    echo -e "${RED} php:"
-    echo -e "${CYAN}airis php use for proxy php commands to your web container service \r\n"
-    echo -e "${PURPLE}sample : airis php -v \r\n"
-
-    echo -e "${RED} bin:"
-    echo -e "${CYAN}airis bin use for proxy vendor binary commands on the web container \r\n"
-    echo -e "${PURPLE}sample : airis bin carbon \r\n"
-
-    echo -e "${RED}composer"
-    echo -e "${CYAN}airis composer use for proxy composer commands to your web container service \r\n"
-    echo -e "${PURPLE}sample : airis composer -v \r\n"
-
-    echo -e "${RED}artisan:"
-    echo -e "${CYAN}airis artisan use for proxy artisan commands to your web container service \r\n"
-    echo -e "${PURPLE}sample : airis artisan cache:clear  \r\n"
-
-    echo -e "${RED}test"
-    echo -e "${CYAN}airis test use for proxy artisan test to your web container service  \r\n"
-    echo -e "${PURPLE}airis test --testsuite=Feature --stop-on-failure\r\n"
-
-    echo -e "${RED}dusk:"
-    echo -e "${CYAN}airis dusk use for proxy artisan dusk commands to your web container service \r\n"
-    echo -e "${PURPLE}sample : airis artisan dusk dusk:chrome-driver \r\n"
-
-    echo -e "${RED}dusk:fails :"
-    echo -e "${CYAN}airis dusk:fails use for proxy artisan dusk:fails commands to your web container service \r\n"
-    echo -e "${PURPLE}sample : airis artisan dusk:fails \r\n"
-
-    echo -e "${RED}tinker:"
-    echo -e "${CYAN}airis tinker use for proxy artisan tinker commands to your web container service \r\n"
-    echo -e "${PURPLE}sample : airis artisan tinker \r\n"
-
-    echo -e "${RED} app-console|a-console:"
-    echo -e "${CYAN} airis app-console|a-console use for proxy php Interactive mode enabled to your web container service  \r\n"
-    echo -e "${PURPLE} sample : airis app-console \r\n"
-
-    echo -e "${RED}node:"
-    echo -e "${CYAN}airis node use for proxy node command to your node container service  \r\n"
-    echo -e "${PURPLE}airis node install \r\n"
-
-    echo -e "${RED}npm:"
-    echo -e "${CYAN}airis npm use for proxy npm command to your node container service  \r\n"
-    echo -e "${PURPLE}airis npm install \r\n"
-
-    echo -e "${RED}npx:"
-    echo -e "${CYAN}airis npx use for Proxy NPX commands to the 'npx' binary on the web container  \r\n"
-    echo -e "${PURPLE}airis npx \r\n"
-
-    echo -e "${RED}yarn:"
-    echo -e "${CYAN}airis yarn use for proxy node yarn command to your node container service  \r\n"
-    echo -e "${PURPLE}airis yarn test \r\n"
-
-    echo -e "${RED}mysql:"
-    echo -e "${CYAN}airis mysql use for initiate a mysql CLI terminal session within the 'mysql' container  \r\n"
-    echo -e "${PURPLE}airis mysql \r\n"
-
-    echo -e "${RED}mariadb:"
-    echo -e "${CYAN}airis mariadb use for initiate a MYSQL CLI terminal session within the 'mariadb' container  \r\n"
-    echo -e "${PURPLE}airis mariadb \r\n"
-
-    echo -e "${RED}psql:"
-    echo -e "${CYAN}airis psql use for initiate a PostgreSQL CLI terminal session within the "pgsql" container  \r\n"
-    echo -e "${PURPLE}airis psql \r\n"
-
-    echo -e "${RED}shell:"
-    echo -e "${CYAN}airis shell use for initiate a bash shell within the web container  \r\n"
-    echo -e "${PURPLE}sample : airis shell \r\n"
-
-    echo -e "${RED}root-shell:"
-    echo -e "${CYAN}airis shell use for initiate a root user bash shell within the web container  \r\n"
-    echo -e "${PURPLE}sample : airis shell \r\n"
-
-    echo -e "${RED}redis:"
-    echo -e "${CYAN}airis redis use for Initiate a Redis CLI terminal session within the 'redis' container  \r\n"
-    echo -e "${PURPLE}sample : airis redis \r\n"
-
-    echo -e "${RED}share:"
-    echo -e "${CYAN}airis share use for Share the site  \r\n"
-    echo -e "${PURPLE}sample : airis share \r\n"
-
-    echo -e "${RED} :"
-    echo -e "${CYAN} Pass unknown commands to the 'docker-compose' binary  \r\n"
-    echo -e "${PURPLE}sample : airis  events \r\n"
-
+    echo -e "${CUSTOM_F_COLOR[4]} -----------------------------------------------------------------------------------------------------------------------${NC}"
+    echo -e "${CUSTOM_F_COLOR[4]} |${CUSTOM_F_COLOR[26]}                                   you have these commands for execute                                               ${CUSTOM_F_COLOR[4]}|${NC}"
+    echo -e "${CUSTOM_F_COLOR[180]} -----------------------------------------------------------------------------------------------------------------------${NC}"
+    echo -e "${CUSTOM_B_COLOR[0]}${CUSTOM_F_COLOR[202]}    help | -h:                                                                                                          ${NC}"
+    echo -e "${CUSTOM_B_COLOR[0]}${CUSTOM_F_COLOR[172]}          this commmand show help of airis command                                                                      ${NC}"
+    echo -e "${CUSTOM_B_COLOR[0]}${CUSTOM_F_COLOR[196]}             sample : airis  help                                                                                       ${NC}"
+    echo -e "${CUSTOM_F_COLOR[180]} -----------------------------------------------------------------------------------------------------------------------${NC}"
+    echo -e "${CUSTOM_B_COLOR[0]}${CUSTOM_F_COLOR[202]}    print-colors | -prc:                                                                                                ${NC}"
+    echo -e "${CUSTOM_B_COLOR[0]}${CUSTOM_F_COLOR[172]}          this commmand print color palete to help you when you wanna chose color for                                   ${NC}"
+    echo -e "${CUSTOM_B_COLOR[0]}${CUSTOM_F_COLOR[196]}             sample : airis  -prc                                                                                       ${NC}"
+    echo -e "${CUSTOM_F_COLOR[180]} -----------------------------------------------------------------------------------------------------------------------${NC}"
+    echo -e "${CUSTOM_B_COLOR[232]}${CUSTOM_F_COLOR[184]}    docker-restart | -dr:                                                                                               ${NC}"
+    echo -e "${CUSTOM_B_COLOR[232]}${CUSTOM_F_COLOR[202]}       with this command other project that run with docker and bind required ports will stop,and then you can run airis${NC}"
+    echo -e "${CUSTOM_B_COLOR[232]}${CUSTOM_F_COLOR[88]}          sample : airis docker-restart | airis -dr                                                                     ${NC}"
+    echo -e "${CUSTOM_F_COLOR[180]} -----------------------------------------------------------------------------------------------------------------------${NC}"
+    echo -e "${CUSTOM_B_COLOR[233]}${CUSTOM_F_COLOR[104]}   up:                                                                                                                  ${NC}"
+    echo -e "${CUSTOM_B_COLOR[233]}${CUSTOM_F_COLOR[140]}      airis up use for running docker-compose up commands                                                               ${NC}"
+    echo -e "${CUSTOM_B_COLOR[233]}${CUSTOM_F_COLOR[160]}         sample : airis up                                                                                              ${NC}"
+    echo -e "${CUSTOM_F_COLOR[180]} -----------------------------------------------------------------------------------------------------------------------${NC}"
+    echo -e "${CUSTOM_B_COLOR[232]}${CUSTOM_F_COLOR[32]}    down:                                                                                                               ${NC}"
+    echo -e "${CUSTOM_B_COLOR[232]}${CUSTOM_F_COLOR[68]}        airis down use for running docker-compose down commands                                                         ${NC}"
+    echo -e "${CUSTOM_B_COLOR[232]}${CUSTOM_F_COLOR[160]}           sample : airis down                                                                                          ${NC}"
+    echo -e "${CUSTOM_F_COLOR[180]} -----------------------------------------------------------------------------------------------------------------------${NC}"
+    echo -e "${CUSTOM_B_COLOR[16]}${CUSTOM_F_COLOR[104]}    php:                                                                                                                ${NC}"
+    echo -e "${CUSTOM_B_COLOR[16]}${CUSTOM_F_COLOR[140]}        airis php use for proxy php commands to your web container service                                              ${NC}"
+    echo -e "${CUSTOM_B_COLOR[16]}${CUSTOM_F_COLOR[160]}            sample : airis php -v                                                                                       ${NC}"
+    echo -e "${CUSTOM_F_COLOR[180]} -----------------------------------------------------------------------------------------------------------------------${NC}"
+    echo -e "${CUSTOM_B_COLOR[233]}${CUSTOM_F_COLOR[104]}    bin:                                                                                                                ${NC}"
+    echo -e "${CUSTOM_B_COLOR[233]}${CUSTOM_F_COLOR[140]}        airis bin use for proxy vendor binary commands on the web container                                             ${NC}"
+    echo -e "${CUSTOM_B_COLOR[233]}${CUSTOM_F_COLOR[160]}            sample : airis bin carbon                                                                                   ${NC}"
+    echo -e "${CUSTOM_F_COLOR[180]} -----------------------------------------------------------------------------------------------------------------------${NC}"
+    echo -e "${CUSTOM_B_COLOR[232]}${CUSTOM_F_COLOR[32]}    composer:                                                                                                           ${NC}"
+    echo -e "${CUSTOM_B_COLOR[232]}${CUSTOM_F_COLOR[68]}        airis composer use for proxy composer commands to your web container service                                    ${NC}"
+    echo -e "${CUSTOM_B_COLOR[232]}${CUSTOM_F_COLOR[160]}           sample : airis composer -v                                                                                   ${NC}"
+    echo -e "${CUSTOM_F_COLOR[180]} -----------------------------------------------------------------------------------------------------------------------${NC}"
+    echo -e "${CUSTOM_B_COLOR[16]}${CUSTOM_F_COLOR[104]}    artisan:                                                                                                            ${NC}"
+    echo -e "${CUSTOM_B_COLOR[16]}${CUSTOM_F_COLOR[140]}          airis artisan use for proxy artisan commands to your web container service                                    ${NC}"
+    echo -e "${CUSTOM_B_COLOR[16]}${CUSTOM_F_COLOR[160]}            sample : airis artisan cache:clear                                                                          ${NC}"
+    echo -e "${CUSTOM_F_COLOR[180]} -----------------------------------------------------------------------------------------------------------------------${NC}"
+    echo -e "${CUSTOM_B_COLOR[233]}${CUSTOM_F_COLOR[104]}    test:                                                                                                               ${NC}"
+    echo -e "${CUSTOM_B_COLOR[233]}${CUSTOM_F_COLOR[140]}          airis test use for proxy artisan test to your web container service                                           ${NC}"
+    echo -e "${CUSTOM_B_COLOR[233]}${CUSTOM_F_COLOR[160]}            sample : airis test --testsuite=Feature --stop-on-failure                                                   ${NC}"
+    echo -e "${CUSTOM_F_COLOR[180]} -----------------------------------------------------------------------------------------------------------------------${NC}"
+    echo -e "${CUSTOM_B_COLOR[232]}${CUSTOM_F_COLOR[32]}    dusk:                                                                                                               ${NC}"
+    echo -e "${CUSTOM_B_COLOR[232]}${CUSTOM_F_COLOR[68]}         airis dusk use for proxy artisan dusk commands to your web container service                                   ${NC}"
+    echo -e "${CUSTOM_B_COLOR[232]}${CUSTOM_F_COLOR[160]}           sample : airis artisan dusk dusk:chrome-driver                                                               ${NC}"
+    echo -e "${CUSTOM_F_COLOR[180]} -----------------------------------------------------------------------------------------------------------------------${NC}"
+    echo -e "${CUSTOM_B_COLOR[16]}${CUSTOM_F_COLOR[104]}    dusk:fails :                                                                                                        ${NC}"
+    echo -e "${CUSTOM_B_COLOR[16]}${CUSTOM_F_COLOR[140]}          airis dusk:fails use for proxy artisan dusk:fails commands to your web container service                      ${NC}"
+    echo -e "${CUSTOM_B_COLOR[16]}${CUSTOM_F_COLOR[160]}            sample : airis artisan dusk:fails                                                                           ${NC}"
+    echo -e "${CUSTOM_F_COLOR[180]} -----------------------------------------------------------------------------------------------------------------------${NC}"
+    echo -e "${CUSTOM_B_COLOR[233]}${CUSTOM_F_COLOR[104]}    tinker:                                                                                                             ${NC}"
+    echo -e "${CUSTOM_B_COLOR[233]}${CUSTOM_F_COLOR[140]}          airis tinker use for proxy artisan tinker commands to your web container service                              ${NC}"
+    echo -e "${CUSTOM_B_COLOR[233]}${CUSTOM_F_COLOR[160]}              sample : airis artisan tinker                                                                             ${NC}"
+    echo -e "${CUSTOM_F_COLOR[180]} -----------------------------------------------------------------------------------------------------------------------${NC}"
+    echo -e "${CUSTOM_B_COLOR[232]}${CUSTOM_F_COLOR[32]}   app-console|a-console:                                                                                               ${NC}"
+    echo -e "${CUSTOM_B_COLOR[232]}${CUSTOM_F_COLOR[68]}         airis app-console|a-console use for proxy php Interactive mode enabled to your web container service           ${NC}"
+    echo -e "${CUSTOM_B_COLOR[232]}${CUSTOM_F_COLOR[160]}             sample : airis app-console                                                                                 ${NC}"
+    echo -e "${CUSTOM_F_COLOR[180]} -----------------------------------------------------------------------------------------------------------------------${NC}"
+    echo -e "${CUSTOM_B_COLOR[16]}${CUSTOM_F_COLOR[104]}    node:                                                                                                               ${NC}"
+    echo -e "${CUSTOM_B_COLOR[16]}${CUSTOM_F_COLOR[140]}          airis node use for proxy node command to your node container service                                          ${NC}"
+    echo -e "${CUSTOM_B_COLOR[16]}${CUSTOM_F_COLOR[160]}              sample: airis node install                                                                                ${NC}"
+    echo -e "${CUSTOM_F_COLOR[180]} -----------------------------------------------------------------------------------------------------------------------${NC}"
+    echo -e "${CUSTOM_B_COLOR[233]}${CUSTOM_F_COLOR[104]}   npm:                                                                                                                 ${NC}"
+    echo -e "${CUSTOM_B_COLOR[233]}${CUSTOM_F_COLOR[140]}         airis npm use for proxy npm command to your node container service                                             ${NC}"
+    echo -e "${CUSTOM_B_COLOR[233]}${CUSTOM_F_COLOR[160]}             sample: airis npm install                                                                                  ${NC}"
+    echo -e "${CUSTOM_F_COLOR[180]} -----------------------------------------------------------------------------------------------------------------------${NC}"
+    echo -e "${CUSTOM_B_COLOR[232]}${CUSTOM_F_COLOR[32]}     npx:                                                                                                               ${NC}"
+    echo -e "${CUSTOM_B_COLOR[232]}${CUSTOM_F_COLOR[68]}           airis npx use for Proxy NPX commands to the 'npx' binary on the web container                                ${NC}"
+    echo -e "${CUSTOM_B_COLOR[232]}${CUSTOM_F_COLOR[160]}              sample: airis npx                                                                                         ${NC}"
+    echo -e "${CUSTOM_F_COLOR[180]} -----------------------------------------------------------------------------------------------------------------------${NC}"
+    echo -e "${CUSTOM_B_COLOR[16]}${CUSTOM_F_COLOR[104]}    yarn:                                                                                                               ${NC}"
+    echo -e "${CUSTOM_B_COLOR[16]}${CUSTOM_F_COLOR[140]}          airis yarn use for proxy node yarn command to your node container service                                     ${NC}"
+    echo -e "${CUSTOM_B_COLOR[16]}${CUSTOM_F_COLOR[160]}              sample: airis yarn test                                                                                   ${NC}"
+    echo -e "${CUSTOM_F_COLOR[180]} -----------------------------------------------------------------------------------------------------------------------${NC}"
+    echo -e "${CUSTOM_B_COLOR[233]}${CUSTOM_F_COLOR[104]}    mysql:                                                                                                              ${NC}"
+    echo -e "${CUSTOM_B_COLOR[233]}${CUSTOM_F_COLOR[140]}          airis mysql use for initiate a mysql CLI terminal session within the 'mysql' container                        ${NC}"
+    echo -e "${CUSTOM_B_COLOR[233]}${CUSTOM_F_COLOR[160]}              sample: airis mysql                                                                                       ${NC}"
+    echo -e "${CUSTOM_F_COLOR[180]} -----------------------------------------------------------------------------------------------------------------------${NC}"
+    echo -e "${CUSTOM_B_COLOR[232]}${CUSTOM_F_COLOR[32]}    mariadb:                                                                                                            ${NC}"
+    echo -e "${CUSTOM_B_COLOR[232]}${CUSTOM_F_COLOR[68]}          airis mariadb use for initiate a MYSQL CLI terminal session within the 'mariadb' container                    ${NC}"
+    echo -e "${CUSTOM_B_COLOR[232]}${CUSTOM_F_COLOR[160]}             sample: airis mariadb                                                                                      ${NC}"
+    echo -e "${CUSTOM_F_COLOR[180]} -----------------------------------------------------------------------------------------------------------------------${NC}"
+    echo -e "${CUSTOM_B_COLOR[16]}${CUSTOM_F_COLOR[104]}    psql:                                                                                                               ${NC}"
+    echo -e "${CUSTOM_B_COLOR[16]}${CUSTOM_F_COLOR[140]}          airis psql use for initiate a PostgreSQL CLI terminal session within the 'pgsql' container                    ${NC}"
+    echo -e "${CUSTOM_B_COLOR[16]}${CUSTOM_F_COLOR[160]}              sample: airis psql                                                                                        ${NC}"
+    echo -e "${CUSTOM_F_COLOR[180]} -----------------------------------------------------------------------------------------------------------------------${NC}"
+    echo -e "${CUSTOM_B_COLOR[233]}${CUSTOM_F_COLOR[104]}    shell:                                                                                                              ${NC}"
+    echo -e "${CUSTOM_B_COLOR[233]}${CUSTOM_F_COLOR[140]}          airis shell use for initiate a bash shell within the web container                                            ${NC}"
+    echo -e "${CUSTOM_B_COLOR[233]}${CUSTOM_F_COLOR[160]}              sample : airis shell                                                                                      ${NC}"
+    echo -e "${CUSTOM_F_COLOR[180]} -----------------------------------------------------------------------------------------------------------------------${NC}"
+    echo -e "${CUSTOM_B_COLOR[232]}${CUSTOM_F_COLOR[32]}    root-shell:                                                                                                         ${NC}"
+    echo -e "${CUSTOM_B_COLOR[232]}${CUSTOM_F_COLOR[68]}          airis shell use for initiate a root user bash shell within the web container                                  ${NC}"
+    echo -e "${CUSTOM_B_COLOR[232]}${CUSTOM_F_COLOR[160]}             sample : airis shell                                                                                       ${NC}"
+    echo -e "${CUSTOM_F_COLOR[180]} -----------------------------------------------------------------------------------------------------------------------${NC}"
+    echo -e "${CUSTOM_B_COLOR[16]}${CUSTOM_F_COLOR[104]}    redis:                                                                                                              ${NC}"
+    echo -e "${CUSTOM_B_COLOR[16]}${CUSTOM_F_COLOR[140]}          airis redis use for Initiate a Redis CLI terminal session within the 'redis' container                        ${NC}"
+    echo -e "${CUSTOM_B_COLOR[16]}${CUSTOM_F_COLOR[160]}              sample : airis redis                                                                                      ${NC}"
+    echo -e "${CUSTOM_F_COLOR[180]} -----------------------------------------------------------------------------------------------------------------------${NC}"
+    echo -e "${CUSTOM_B_COLOR[233]}${CUSTOM_F_COLOR[104]}    share:                                                                                                              ${NC}"
+    echo -e "${CUSTOM_B_COLOR[233]}${CUSTOM_F_COLOR[140]}           airis share use for Share the site                                                                           ${NC}"
+    echo -e "${CUSTOM_B_COLOR[233]}${CUSTOM_F_COLOR[160]}              sample : airis share                                                                                      ${NC}"
+    echo -e "${CUSTOM_F_COLOR[180]} -----------------------------------------------------------------------------------------------------------------------${NC}"
+    echo -e "${CUSTOM_B_COLOR[232]}${CUSTOM_F_COLOR[32]}   all other docker-compose commands:                                                                                   ${NC}"
+    echo -e "${CUSTOM_B_COLOR[232]}${CUSTOM_F_COLOR[68]}         Pass unknown commands to the 'docker-compose' binary                                                           ${NC}"
+    echo -e "${CUSTOM_B_COLOR[232]}${CUSTOM_F_COLOR[160]}             sample : airis  logs web                                                                                   ${NC}"
+    echo -e "${CUSTOM_F_COLOR[180]} -----------------------------------------------------------------------------------------------------------------------${NC}"
+  # print color palete
+  elif [ "$1" == "print-colors" ] || [ "$1" == "-prc" ]; then
+    shift 1
+    PRINT_COLORS
   # stop old docker services
   elif [ "$1" == "docker-restart" ] || [ "$1" == "-dr" ]; then
     shift 1
-     if [ "$MACHINE" == "linux" ]; then
-      echo -e "${BLACK} your machin is linux or windows with wls linux${NC}"
+    if [ "$MACHINE" == "linux" ]; then
+      echo -e "${CUSTOM_B_COLOR[7]}${CUSTOM_F_COLOR[0]} your machin is linux or windows with wls linux${NC}"
       NGINXRUNNING=$(systemctl is-active nginx)
       APACHERUNNING=$(systemctl is-active apache2)
       MYSQLRUNNING=$(systemctl is-active mysql)
-      if [ $APACHERUNNING = "active" ] ; then
+      if [ $APACHERUNNING = "active" ]; then
         echo -e "${CYAN}Apache is running, stopping it${NC}"
         sudo service apache2 stop
         echo -e "${YELLOW}Stopping Apache2${NC}"
       fi
-      if [ $NGINXRUNNING = "active" ] ; then
+      if [ $NGINXRUNNING = "active" ]; then
         echo -e "${PURPLE}nginx is running, stopping it${NC}"
         sudo service nginx stop
         echo "${YELLOW}Stopping Nginx${NC}"
       fi
-      if [ $MYSQLRUNNING = "active" ] ; then
+      if [ $MYSQLRUNNING = "active" ]; then
         echo -e "${BLACK}MySql is running, stopping it${NC}"
         sudo service mysql stop
         echo -e "${YELLOW}Stopping MySql${NC}"
       fi
     fi
     if [ "$MACHINE" == "mac" ]; then
-      NGINXRUNNING=$(ps aux | grep -v grep | grep -c  -i nginx)
-      APACHERUNNING=$(ps aux |grep -v grep | grep -c  -i httpd)
-      MYSQLRUNNING=$(ps aux | grep -v grep | grep -c  -i mysql)
-      if [ $APACHERUNNING != 0 ] ; then
+      NGINXRUNNING=$(ps aux | grep -v grep | grep -c -i ^nginx$)
+      APACHERUNNING=$(ps aux | grep -v grep | grep -c -i ^httpd$)
+      MYSQLRUNNING=$(ps aux | grep -v grep | grep -c -i ^mysql$)
+      if [ $APACHERUNNING != 0 ]; then
         echo -e "${CYAN}Apache is running, stopping it${NC}"
         brew services stop httpd
         echo -e "${YELLOW}Stopping Apache2${NC}"
       fi
-      if [ $NGINXRUNNING != 0 ] ; then
+      if [ $NGINXRUNNING != 0 ]; then
         echo -e "${PURPLE}nginx is running, stopping it${NC}"
         brew services stop nginx
         echo "${YELLOW}Stopping Nginx${NC}"
       fi
-      if [ $MYSQLRUNNING != 1 ] ; then
+      if [ $MYSQLRUNNING != 0 ]; then
         echo -e "${BLACK}MySql is running, stopping it${NC}"
         brew services stop mysql
         echo -e "${YELLOW}Stopping MySql${NC}"
       fi
     fi
-    echo -e "${YELLOW}Stopping Dockers...${NC}"
+    echo -e "${CUSTOM_F_COLOR[87]}Stopping Dockers...${NC}"
     docker stop $(docker ps -a -q)
-    echo -e "Docker ${GREEN}Stopped${NC}"
-    echo -e "${YELLOW}Stopping Docker-compose...${NC}"
+    echo -e "Docker ${CUSTOM_F_COLOR[200]}Stopped${NC}"
+    echo -e "${CUSTOM_F_COLOR[26]}Stopping Docker-compose...${NC}"
     docker-compose stop
-    echo -e "Docker-compose ${GREEN}Stopped${NC}"
-    echo -e "${YELLOW}Old docker running project stoped ,now you can start airis...${NC}"
+    echo -e "Docker-compose ${CUSTOM_F_COLOR[99]}Stopped${NC}"
+    echo -e "${CUSTOM_F_COLOR[161]}running projects using docker or docker-compose stopped ,${CUSTOM_F_COLOR[196]}now you can start airis...${NC}"
   # Proxy PHP commands to the "php" binary on the application container...
   elif [ "$1" == "php" ]; then
     shift 1
