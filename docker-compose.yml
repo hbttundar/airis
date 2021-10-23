@@ -59,8 +59,7 @@ services:
     working_dir: /var/www/html/
     user: "${WWWUSER}"
     volumes:
-      - "./:/var/www/html/"
-    command: [ "install", "--ignore-platform-reqs" ]
+      - "./:/var/www/html"
     networks:
       - airis
     container_name: ${COMPOSER_CONTAINER_NAME}
@@ -170,7 +169,7 @@ services:
     depends_on:
       - mongo
       - elasticsearch
-      - proxy 
+      - proxy
     networks:
       - airis
     ports:
@@ -211,7 +210,7 @@ services:
     ports:
       - "9999:9000"
     container_name: ${PORTAINER_CONTAINER_NAME}
-################################################################################################################################    
+################################################################################################################################
 networks:
   airis:
     driver: bridge
@@ -229,4 +228,4 @@ volumes:
   airis_graylog:
     driver: local
   airis_portainer:
-      driver: local  
+      driver: local
